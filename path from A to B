@@ -1,0 +1,86 @@
+/* 
+Given a directed graph, a source vertex ‘s’ and a destination vertex ‘d’, print all paths from given ‘s’ to ‘d’.
+
+Input: numVert numEdges homeVert targetVert edgePairs
+
+4 6 3
+0 1
+0 2
+0 3
+1 3
+2 0
+2 1
+OUTPUT: 2013,203,213
+*/
+
+#include<queue>
+#include<iostream>
+#include<list>
+using namespace std;
+
+class Graph {
+private:
+	int numV;
+	list<int>* adjList;
+	list<queue<int>>* paths;
+public:
+	Graph(int numV) {
+		this->numV = numV;
+		adjList = new list<int>[numV];
+		paths = new list<queue<int>>;
+	}
+	void add(int homeV, int destinationV) {
+		adjList[homeV].push_back(destinationV);
+	}
+	void DFS(int home,int target,vector<bool> isVisited,queue<int> path){
+		//mark home as visited
+		isVisited[home] = true;
+
+		//push home into path
+		path.push(home);
+
+		//if home is target, were done here
+		if (home==target) paths->push_back(path);
+
+		//look into adjList for nbrs
+		for (auto itr = adjList[home].begin(); itr != adjList[home].end(); itr++) {
+			if (isVisited[*itr] == false)
+				DFS(*itr, target, isVisited, path);
+		}
+	}
+
+	void printPaths() {
+		cout << endl;
+		for (auto itr = paths->begin(); itr != paths->end(); itr++) {
+			queue<int> path = *itr;
+			while (!path.empty()) {
+				int v = path.front();
+				path.pop();
+				cout << v << " ";
+			}
+			cout << endl;
+		}
+	}
+	
+};
+
+int main() {
+	int numV, numE,startingV, targetV, home, dest;
+	cin >> numV >> numE >>startingV>> targetV;
+
+	Graph* g = new Graph(numV);
+	for (int i = 0; i < numE; i++) {
+		cin >> home >> dest;
+		g->add(home, dest);
+	}
+
+	vector<bool> isVisited(numV, 0);
+	queue<int> path;
+
+	//passes a copy of isVisited (bool vector of false) and path (empty queue). 
+	g->DFS(startingV, targetV, isVisited, path);
+	g->printPaths();
+
+}
+
+
