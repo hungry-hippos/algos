@@ -1,0 +1,109 @@
+/*
+A mother vertex in a directed graph G = (V,E) is a vertex v such that all other vertices in G can be reached by a path from v. Find which vertices in the following graph are mother vertices
+Input: 
+numberOfVertices numOfEdges
+edgePairs
+
+7 8
+0 1
+0 2
+1 3
+4 1
+5 2
+5 6
+6 4
+6 0
+Expected output: 5;
+*/
+
+#include<queue>
+#include<iostream>
+#include<list>
+using namespace std;
+
+class Graph {
+private:
+	int numV;
+	list<int>* adjList;
+	list<int>* motherV;
+public:
+	Graph(int numV) {
+		this->numV = numV;
+		adjList = new list<int>[numV];
+		motherV = new list<int>;
+	}
+	void add(int homeV, int destinationV) {
+		adjList[homeV].push_back(destinationV);
+	}
+	void BFS(int homeV) {
+
+		//create isVisited boolean array
+		bool* isVisited = new bool[numV];
+		for (int i = 0; i < numV; i++) {
+			isVisited[i] = false;
+		}
+
+		//mark homeV as visited
+		isVisited[homeV] = true;
+
+		//create queue and store homeV nbrs
+		queue<int>unexplored;
+		for (auto itr = adjList[homeV].begin(); itr != adjList[homeV].end(); itr++) {
+			unexplored.push(*itr);
+		}
+
+		//iterate until queue empties out and all vertices that can be reached are explored
+		while (!unexplored.empty()) {
+			//get front element
+			int nbr = unexplored.front();
+			unexplored.pop();
+
+			//mark nbr as visited
+			isVisited[nbr] = true;
+
+			//look into adjList for next nbrs, only push those that have not been visited
+			for (auto itr = adjList[nbr].begin(); itr != adjList[nbr].end(); itr++) {
+				if (isVisited[*itr] == false)
+					unexplored.push(*itr);
+			}
+		}
+		//once all nodes that could be reached have been reached, lets see if that compasses ALL nodes. If so, push this homeV into motherV list
+		bool isMother = true;
+		for (int i = 0; i < numV; i++) {
+			if (isVisited[i] == false) {
+				isMother = false;
+				break;
+			}
+		}
+		if (isMother) {
+			motherV->push_back(homeV);
+		}
+
+
+	}
+	void BFSWholeGraph() {
+		for (int i = 0; i < numV; i++) {
+			BFS(i);
+		}
+	}
+	void printMotherV() {
+		for (auto itr = motherV->begin(); itr != motherV->end(); itr++) {
+			cout << *itr << " ";
+		}
+	}
+};
+
+int main() {
+	int numV, home, dest, numE;
+	cin >> numV >> numE;
+
+	Graph* g = new Graph(numV);
+	for (int i = 0; i < numE; i++) {
+		cin >> home >> dest;
+		g->add(home, dest);
+	}
+	g->BFSWholeGraph();
+
+	g->printMotherV();
+}
+
