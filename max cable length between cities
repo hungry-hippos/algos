@@ -1,0 +1,118 @@
+We are given a map of cities connected with each other via cable lines such that there is no cycle between any two cities. We need to find the maximum length of cable between any two cities for given city map.
+
+Input : n = 6  
+        1 2 3  // Cable length from 1 to 2 (or 2 to 1) is 3
+        2 3 4
+        2 6 2
+        6 4 6
+        6 5 5
+Output: maximum length of cable = 12
+
+#include<iostream>
+#include<list>
+#include<stack>
+using namespace std;
+
+class Graph {
+private:
+	int numVertices;
+	list<pair<int,int>>* adjList;
+	int* longestPaths;
+
+public:
+	Graph(int numVertices) {
+		this->numVertices = numVertices;
+		adjList = new list<pair<int,int>>[numVertices+1];
+		longestPaths = new int[numVertices + 1];
+	}
+	void insertEdge(int home, int target, int distance) {
+		adjList[home].push_back(make_pair(target,distance));
+		adjList[target].push_back(make_pair(home, distance));
+	}
+	void printList() {
+		for (int home = 0; home < numVertices + 1; home++) {
+			cout << "Node: " << home << endl;
+			for (auto itr = adjList[home].begin(); itr != adjList[home].end(); itr++) {
+				cout << "       Connects: " << itr->first << "        Distance: " << itr->second << endl;
+			}
+			cout << endl;
+		}
+	}
+	void dfsFull() {
+		int maxLength = INT_MIN;
+		for (int home = 1; home <= numVertices; home++) {
+			int longestPath=dfs(home);
+			maxLength = (longestPath > maxLength) ? longestPath : maxLength;
+		}
+		cout << "LONGEST PATH: " << maxLength;
+	}
+	int dfs(int home) {
+		stack<pair<int,int>> unexplored;
+		int maxLength = INT_MIN;
+		bool* visited = new bool[numVertices + 1];
+		for (int i = 0; i < numVertices + 1; i++) {
+			visited[i] = false;
+		}
+
+		//pushing nbr into unexplored stack. Pushing d into dFromHome stack
+		for (auto itr = adjList[home].begin(); itr != adjList[home].end(); itr++) {
+			unexplored.push(*itr);
+		}
+
+		//marking home as visited to avoid initial cycles
+		visited[home] = true;
+
+		while (!unexplored.empty()) {
+			//pop top element, get location and distance from home
+			pair<int,int> top = unexplored.top();
+			int location = top.first;
+			int dFromHome = top.second;
+			unexplored.pop();
+
+			maxLength = (dFromHome > maxLength) ? dFromHome : maxLength;
+
+			//mark node as visited
+			visited[location] = true;
+
+			//look into adjList, get all nbrs with their distances from home
+			for (auto itr = adjList[location].begin(); itr != adjList[location].end(); itr++) {
+				pair<int, int> nbrPair = *itr;
+				int nbrLoc = nbrPair.first;
+				int nbrDist = nbrPair.second;
+
+				if (visited[nbrLoc] == true)
+					continue;
+
+				unexplored.push(make_pair(nbrLoc, dFromHome + nbrDist));
+			}
+		}
+		return maxLength;
+	}
+
+};
+
+
+
+int main() {
+	int numVertices;
+	string comm;
+
+	cin >> numVertices;
+
+	Graph* g = new Graph(numVertices);
+
+	while (cin) {
+		cin >> comm;
+		if (comm == "add") {
+			int home, target, distance;
+			cin >> home >> target >> distance;
+			g->insertEdge(home,target,distance);
+		}
+		if (comm == "printList") {
+			g->printList();
+		}
+		if (comm == "dfs") {
+			g->dfsFull();
+		}
+	}
+}
