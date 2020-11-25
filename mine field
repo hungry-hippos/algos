@@ -1,0 +1,224 @@
+/* 
+Given a maze in the form of a rectangular matrix, where an O represents an open square, M a mine, and X a wall, return a matrix outlining the 
+closest distance of any O to the nearest mine. Return a matrix where every O now represents the distance to the closest mine, every M is represented by 
+a 0, and every wall X is represented by an X).
+Input: numRows numCols O/M/X's
+
+6 5
+O M O O X
+O X X O M
+O O O O O
+O X X X O
+O O M O O
+O X X M O
+
+Output:
+1 0 1 2 X
+2 X X 1 0
+3 4 3 2 1 
+3 X X X 2
+2 1 0 1 2
+3 X X 0 1
+
+*/
+
+#include<iostream>
+#include<stack>
+
+using namespace std;
+
+class Graph {
+private:
+	int rows;
+	int cols;
+	char** inputMat;
+	int** outputMat;
+public:
+	Graph(int rows, int cols) {
+		this->rows = rows;
+		this->cols = cols;
+
+		inputMat = new char* [rows];
+		for (int i = 0; i < rows; i++) {
+			inputMat[i] = new char[cols];
+			for (int j = 0; j < cols; j++) {
+				inputMat[i][j] = '0';
+			}
+		}
+
+		outputMat = new int* [rows];
+		for (int i = 0; i < rows; i++) {
+			outputMat[i] = new int[cols];
+			for (int j = 0; j < cols; j++) {
+				outputMat[i][j] = 0;
+			}
+		}
+	}
+	
+	void setInputMat(char input) {
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (inputMat[i][j] == '0') {
+					inputMat[i][j] = input;
+					return;
+				}
+			}
+		}
+	}
+	
+	void printInputMat() {
+		cout << endl;
+		for (int row = 0; row < rows; row++) {
+			for (int col = 0; col < cols; col++) {
+				cout << inputMat[row][col] << " ";
+			}
+			cout << endl;
+		}
+	}
+
+	void initializeOutputMat() {
+		//go through each element in inputMat, change chars for ints
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				int val = 0;
+				switch (inputMat[i][j]) {
+				case 'O':
+					val = INT_MAX;
+					break;
+				case 'X':
+					val = -1;
+					break;
+				case 'M':
+					val = 0;
+					break;
+				}
+				outputMat[i][j] = val;
+			}
+		}
+	}
+
+	void printOutputMat() {
+		char wall = 219;
+		char mine = 233;
+		cout << endl;
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+
+				switch (outputMat[i][j]) {
+				case INT_MAX:
+					cout <<"X ";
+					break;
+				case -1:
+					cout << wall << " ";
+					break;
+				case 0:
+					cout << mine << " ";
+					break;
+				default:
+					cout << outputMat[i][j] << " ";
+					break;
+				}
+			}
+			cout << endl;
+		}
+	}
+
+	bool isValidGrid(int row, int col) {
+		if (0 <= row && row < rows && 0 <= col && col < cols)
+			return true;
+		return false;
+	}
+	void BFS(int homeRow, int homeCol) {
+		stack<pair<int, int>> unexplored;
+		bool** isVisited = new bool* [rows];
+		for (int i = 0; i < rows; i++) {
+			isVisited[i] = new bool[cols];
+			for (int j = 0; j < cols; j++) {
+				isVisited[i][j] = false;
+			}
+		}
+
+		//if input is not a landmine, return
+		if (inputMat[homeRow][homeCol] != 'M')
+			return;
+
+		//nbrs vectors
+		int nbrRow[4] = { 1,-1,0,0 };
+		int nbrCol[4] = { 0,0,1,-1 };
+
+		
+
+		//push home mine's coord into unexplored stack
+		unexplored.push(make_pair(homeRow, homeCol));
+		int waveCounter = 0;
+
+
+		while (!unexplored.empty()) {
+			stack<pair<int, int>> currentWave;
+			swap(currentWave, unexplored);
+
+			while (!currentWave.empty()) {
+				//pop top node
+				pair<int, int> currentNode = currentWave.top();
+				currentWave.pop();
+
+
+				//mark node as visited
+				isVisited[currentNode.first][currentNode.second] = true;
+
+				//mark its distance on outputMat if this is not BFS center and if a shorter distance was found
+				if (waveCounter != 0 && outputMat[currentNode.first][currentNode.second]>waveCounter) {
+					outputMat[currentNode.first][currentNode.second] = waveCounter;
+				}
+
+				//find unexplored nodes
+				for (int i = 0; i < 4; i++) {
+					int possRow = currentNode.first + nbrRow[i];
+					int possCol = currentNode.second + nbrCol[i];
+					//making sure nbr is in grid
+					bool nbrExists = isValidGrid(possRow, possCol);
+					if (nbrExists) {
+						//making sure nbr has not been visited
+						bool hasBeenVisited = isVisited[possRow][possCol];
+						if (!hasBeenVisited) {
+							//making sure nbr is an 'O' square
+							if (inputMat[possRow][possCol] == 'O') {
+								//then we input it into the unexplored stack
+								unexplored.push(make_pair(possRow, possCol));
+							}
+						}
+					}
+				}
+			}
+			waveCounter++;
+		}
+	}
+
+	void BFSGrid() {
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (inputMat[i][j] == 'M') {
+					BFS(i, j);
+				}
+			}
+		}
+	}
+};
+
+int main() {
+	int rows, cols;
+	char input;
+	cin >> rows >> cols;
+
+	Graph* g = new Graph(rows, cols);
+
+	for (int i = 0; i < rows * cols; i++) {
+		cin >> input;
+		g->setInputMat(input);
+	}
+	g->initializeOutputMat();
+	g->BFSGrid();
+	g->printOutputMat();
+
+
+}
