@@ -1,0 +1,180 @@
+/* 
+Given an NxN matrix of positive ints, find the shortest path from cell (0,0) to cell (N-1,N-1) given the following contraint:
+you can only move k steps from any cell, where k is the value of the cell.
+
+Input:
+10 10
+7 1 3 5 3 6 1 1 7 5 
+2 3 6 1 1 6 6 6 1 2 
+6 1 7 2 1 4 7 6 6 2
+6 6 7 1 3 3 5 1 3 4 
+5 5 6 1 5 4 6 1 7 4
+3 5 5 2 7 5 3 4 3 6
+4 1 4 3 6 4 5 3 2 6
+4 4 1 7 4 3 3 1 4 2
+4 4 5 1 5 2 3 5 3 5
+3 6 3 5 2 2 6 4 2 1
+
+Shortest path: 6
+(0,0)->(0,4)->(5,4)->(5,2)->(5,7)->(5,9)->(9,9)->
+
+10 10
+4 4 6 5 5 1 1 1 7 4
+3 6 2 4 6 5 7 2 6 6 
+1 3 6 1 1 1 7 1 4 5
+7 5 6 3 1 3 3 1 1 7
+3 4 6 4 7 2 6 5 4 4 
+3 2 5 1 2 5 1 2 3 4
+4 2 2 2 5 2 3 7 7 3
+7 2 4 3 5 2 2 3 6 3
+5 1 4 2 6 4 6 7 3 7
+1 4 1 7 5 3 6 5 3 4
+
+Shortest path: 6
+(0,0)->(0,4)->(5,4)->(5,6)->(5,7)->(5,9)->(9,9)->
+*/
+
+#include<iostream>
+#include<list>
+#include<queue>
+#include<vector>
+using namespace std;
+
+class Graph {
+private:
+	int rows;
+	int cols;
+	pair<int,int> target;
+	int** inputMat;
+	queue<pair<int, int>>* shortestPath;
+
+public:
+	Graph(int rows, int cols) {
+		this->rows = rows;
+		this->cols = cols;
+		target = make_pair(rows - 1, cols - 1);
+		inputMat = new int* [rows];
+		for (int i = 0; i < cols; i++) {
+			inputMat[i] = new int[cols];
+			for (int j = 0; j < cols; j++) {
+				inputMat[i][j] = INT_MIN;
+			}
+		}
+		shortestPath = new queue<pair<int, int>>;
+	}
+	void inputNum(int num) {
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (inputMat[i][j] == INT_MIN) {
+					inputMat[i][j] = num;
+					return;
+				}
+			}
+		}
+	}
+	void printInputMat() {
+		cout << endl;
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				cout << inputMat[i][j] << " ";
+			}
+			cout << endl;
+		}
+	}
+	bool isInGrid(int row, int col) {
+
+		//check if both are within grid range
+		if (0 <= row && row < rows && 0 <= col && col < cols) {
+			return true;
+		}
+
+		return false;
+
+
+	}
+	void printShortestPath() {
+		queue<pair<int, int>> path = *shortestPath;
+		cout << endl;
+		cout << "Path size: " << path.size() << endl;
+
+		while (!path.empty()) {
+			int row = path.front().first;
+			int col = path.front().second;
+			path.pop();
+			cout << "("<<row << "," << col << ") --> ";
+		}
+		cout << endl;
+	}
+
+	void DFS(int rootRow,int rootCol, queue<pair<int,int>> path, vector<vector<bool>> isVisited) {
+
+
+		//mark this node as visited
+		isVisited[rootRow][rootCol] = true;
+
+		//input node into path queue
+		path.push(make_pair(rootRow, rootCol));
+
+		//if path length == shortest path found, kill it. It cant be a shorter path than the one already found.
+		//this step is crucial. If you don't optimize and let every path long for however long it may, you will be compiling for days.
+		if (!shortestPath->empty()) {
+			if (path.size() > shortestPath->size())
+				return;
+		}
+
+		//if root==target, we're done! Input path into allPaths list. The path will be shorter or equal than the the last recorded one because of previous clause
+		if (rootRow == target.first && rootCol==target.second) {
+			* shortestPath = path;
+			printShortestPath();
+			return;
+		}
+
+		//get the coordinates value
+		int val = inputMat[rootRow][rootCol];
+
+		//create nbr vectors
+		int nbrRow[4] = { -val,val,0,0 };
+		int nbrCol[4] = { 0,0,val,-val };
+
+		//look at all 4 nbrs. Recurse into them only if a) valid within grid, b) not visited
+		for (int pos = 0; pos < 4; pos++) {
+
+			//get coord of possible nbr
+			int possRow = rootRow + nbrRow[pos];
+			int possCol = rootCol + nbrCol[pos];
+
+			//check if in grid
+			bool inGrid = isInGrid(possRow,possCol);
+			if (inGrid) {
+
+				//check that it hasn't been visited
+				if (isVisited[possRow][possCol] == false) {
+					
+					//recurse into it
+					DFS(possRow, possCol, path, isVisited);
+				}
+			}
+		}
+	}
+
+	
+};
+
+
+int main() {
+	int rows, cols, num;
+	cin >> rows >> cols;
+
+	Graph* g = new Graph(rows, cols);
+	for (int i = 0; i < (rows * cols); i++) {
+		cin >> num;
+		g->inputNum(num);
+	}
+	queue<pair<int, int>> path;
+	vector<vector<bool>> isVisitedMat;
+	for (int i = 0; i < rows; i++) {
+		vector<bool>isVisitedArr(cols, false);
+		isVisitedMat.push_back(isVisitedArr);
+	}
+	g->DFS(0, 0, path, isVisitedMat);
+}
