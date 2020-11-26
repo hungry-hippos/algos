@@ -3,7 +3,7 @@ Given a directed graph, a source vertex ‘s’ and a destination vertex ‘d’
 
 Input: numVert numEdges homeVert targetVert edgePairs
 
-4 6 3
+4 6 2 3
 0 1
 0 2
 0 3
