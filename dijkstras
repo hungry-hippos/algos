@@ -1,0 +1,165 @@
+/* 
+find the shrotest path in an undirected graph from vertex A-> vertex E.
+Input: numV numE 
+vertexA vertexB edgeWeight
+
+5 7
+A D 1
+A B 6
+D B 2
+D E 1
+B E 2
+B C 5
+E C 5
+*/
+
+#include<map>
+#include<iostream>
+#include<list>
+#include<stack>
+using namespace std;
+
+class Graph {
+private:
+	int numV;
+	int numE;
+	list<pair<char,int>>* adjList;
+
+	int* distH;
+	char* prevV;
+	multimap<int, char>* unexploredPaths;
+
+public:
+	
+	Graph(int numV, int numE) {
+		this->numV = numV;
+		this->numE = numE;
+		adjList = new list<pair<char, int>>[numV];
+		distH = new int [numV];
+		for (int i = 0; i < numV; i++) {
+			distH[i] = INT_MAX;
+		}
+		prevV = new char[numV];
+		unexploredPaths = new multimap<int, char>;
+		
+	};
+	void add(char homeV, char destV, int dist) {
+
+		//find homeV pos in arr
+		int pos = homeV - 'A';
+		//insert destV,dist pair
+		adjList[pos].push_back(make_pair(destV, dist));
+
+		//insert the compliment since this is an undirected graph
+		pos = destV - 'A';
+		adjList[pos].push_back(make_pair(homeV, dist));
+	}
+	void printAdjList() {
+		for (int i = 0; i < numV; i++) {
+			char vertexLetter = 'A' + i;
+			cout << "Vertex: " << vertexLetter << endl;
+			for (auto itr = adjList[i].begin(); itr != adjList[i].end(); itr++) {
+				cout << "(" << itr->first << "," << itr->second << ")-->" << endl;
+			}
+		}
+	}
+	void printShortestPath(char targetV,char homeV) {
+		stack<char> path;
+		char vertex = targetV;
+		char via = prevV[vertex - 'A'];
+
+		while (vertex != homeV) {
+			path.push(vertex);
+
+			vertex = via;
+			via = prevV[vertex - 'A'];
+		}
+		path.push(homeV);
+
+		while (!path.empty()) {
+			cout << path.top() << "-->";
+			path.pop();
+		}
+	}
+	
+	void printDistH() {
+		cout << endl;
+		for (int i = 0; i < numV; i++) {
+			char vertex = 'A' + i;
+			cout << vertex << " ";
+		}
+		cout << endl;
+		for (int i = 0; i < numV; i++) {
+			cout << distH[i] << " ";
+		}
+	}
+	void printPrevV() {
+		cout << endl;
+		for (int i = 0; i < numV; i++) {
+			char vertex = 'A' + i;
+			cout << vertex << " ";
+		}
+		cout << endl;
+		for (int i = 0; i < numV; i++) {
+			cout << prevV[i] << " ";
+		}
+	}
+	void shortestPath(char homeV) {
+		//initizalizing dist and pushing first pair into map
+		distH[homeV-'A'] = 0;
+		unexploredPaths->insert(make_pair(0, homeV));
+
+		while (!unexploredPaths->empty()) {
+			//remove shortest path from map
+			auto currentPath = unexploredPaths->begin();
+			int currentDist = currentPath->first;
+			char currentV = currentPath->second;
+			unexploredPaths->erase(currentPath);
+
+			//look at currentV's nbrs
+			for (auto itr = adjList[currentV-'A'].begin(); itr != adjList[currentV-'A'].end(); itr++) {
+				char nbrV = itr->first;
+				int edgeWeight = itr->second;
+
+				//determing each nbrs dist from home
+				int distNbr = currentDist + edgeWeight;
+
+				//if distNbr is shorter than the recorded distH
+				if (distNbr < distH[nbrV - 'A']) {
+					//if we already found a longer path to nbr, remove it from the map. We dont explore longer paths.
+					if (distH[nbrV - 'A'] != INT_MAX) {
+						auto itr = unexploredPaths->find(distH[nbrV - 'A']);
+						while (itr != unexploredPaths->end() && itr->first == distH[nbrV - 'A']) {
+							if (itr->second == nbrV) {
+								unexploredPaths->erase(itr);
+								break;
+							}
+							itr++;
+						}
+					}
+
+					//update distH, prevV, insert into map
+					distH[nbrV - 'A'] = distNbr;
+					prevV[nbrV - 'A'] = currentV;
+					unexploredPaths->insert(make_pair(distNbr, nbrV));
+				}
+			}
+		}
+	}
+};
+
+int main() {
+	int numV, numE, dist;
+	char homeV, destV;
+	cin >> numV >> numE;
+
+	Graph* g = new Graph(numV, numE);
+	for (int i = 0; i < numE; i++) {
+		cin >> homeV >> destV >> dist;
+		g->add(homeV, destV, dist);
+	}
+	g->shortestPath('A');
+	g->printShortestPath('C','A');
+
+	
+}
