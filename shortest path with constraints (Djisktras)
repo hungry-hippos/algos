@@ -1,0 +1,218 @@
+/* Given an NxN matrix of positive ints, find the shortest path from cell (0,0) to cell (N-1,N-1) given the following contraint:
+you can only move k steps from any cell, where k is the value of the cell. No diagonal movements allowed. Use Djisktras.
+
+Input:
+10 10
+7 1 3 5 3 6 1 1 7 5 
+2 3 6 1 1 6 6 6 1 2 
+6 1 7 2 1 4 7 6 6 2
+6 6 7 1 3 3 5 1 3 4 
+5 5 6 1 5 4 6 1 7 4
+3 5 5 2 7 5 3 4 3 6
+4 1 4 3 6 4 5 3 2 6
+4 4 1 7 4 3 3 1 4 2
+4 4 5 1 5 2 3 5 3 5
+3 6 3 5 2 2 6 4 2 1
+/*
+
+#include <map>
+#include<iostream>
+using namespace std;
+
+struct Point {
+	int row;
+	int col;
+	Point(int row, int col) {
+		this->row = row;
+		this->col = col;
+	}
+};
+
+class Graph {
+	int rows;
+	int cols;
+	int** mat;
+	int** distH;
+	Point*** prevV;
+	multimap<int, Point*>* unexploredPaths;
+public:
+	Graph(int rows, int cols) {
+		this->rows = rows;
+		this->cols = cols;
+		mat = new int* [rows];
+		distH = new int* [rows];
+		prevV = new Point * *[rows];
+		unexploredPaths = new multimap<int, Point*>;
+
+		for (int i = 0; i < rows; i++) {
+			mat[i] = new int[cols];
+			distH[i] = new int[cols];
+			prevV[i] = new Point * [cols];
+			for (int j = 0; j < cols; j++) {
+				mat[i][j] = INT_MIN;
+				distH[i][j] = INT_MAX;
+				prevV[i][j] = NULL;
+			}
+		}
+	}
+	void printMat() {
+		cout << endl;
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				cout << mat[i][j] << " ";
+			}
+			cout << endl;
+		}
+	}
+	void printDistH() {
+		cout << endl;
+		char wall = 219;
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (distH[i][j] == INT_MAX) {
+					cout << wall << " ";
+				}
+				else {
+					cout << distH[i][j] << " ";
+				}
+			}
+			cout << endl;
+		}
+	}
+	void add(int num) {
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				if (mat[i][j] == INT_MIN) {
+					mat[i][j] = num;
+					return;
+				}
+			}
+		}
+	}
+	
+	bool withinGrid(int row, int col) {
+		if (0 <= row && row < rows && 0 <= col && col < cols) {
+			return true;
+		}
+		return false;
+	}
+	void findShortestPaths() {
+
+		//initialize distH[home]
+		distH[0][ 0] = 0;
+
+
+		//insert home into multimap
+		Point* home = new Point(0, 0);
+		unexploredPaths->insert(make_pair(0, home));
+
+		//keep exploring until map is empty
+		while (!unexploredPaths->empty()) {
+
+			//get shortest path from map
+			auto itr = unexploredPaths->begin();
+			pair<int, Point*> currentV = *itr;
+			unexploredPaths->erase(itr);
+
+			Point currentPos = *(currentV.second);
+
+			int currentDist = currentV.first;
+
+
+			int currentRow = currentPos.row;
+			int currentCol = currentPos.col;
+			int currentVal = mat[currentRow][currentCol];
+
+
+
+			//look at nbrs that are inGrid
+			int nbrRow[4] = { currentVal,-currentVal,0,0 };
+			int nbrCol[4] = { 0,0,currentVal,-currentVal };
+
+			for (int nbr = 0; nbr < 4; nbr++) {
+				int possRow = currentRow + nbrRow[nbr];
+				int possCol = currentCol + nbrCol[nbr];
+				bool inGrid = withinGrid(possRow, possCol);
+
+				if (inGrid) {
+
+					//calculate distance from home
+					int distNbr = currentDist + 1;
+
+
+					//if this is a shorter path to nbr, relax path
+					if (distNbr < distH[possRow][possCol]) {
+						//if we had previously found a shorter path, remove it from map. No point in exploring a longer route
+						if (distH[possRow][possCol]!=INT_MAX) {
+							//find the entry in map and remove it
+							auto itr = unexploredPaths->find(distH[possRow][possCol]);
+							for (auto itr2 = itr; itr2 != unexploredPaths->end(); itr2++) {
+								if (itr2->first == distH[possRow][possCol]) {
+									Point pt = *(itr2->second);
+									if (pt.row == possRow && pt.col == possCol) {
+										unexploredPaths->erase(itr2);
+										break;
+									}
+								}
+								else {
+									break;
+								}
+							}
+
+						}
+						
+						//update distH and prevV with new point data
+						distH[possRow][possCol] = distNbr;
+						prevV[possRow][possCol] = new Point(currentRow, currentCol);
+						//insert path into map
+						Point* nbrLoc = new Point(possRow, possCol);
+						unexploredPaths->insert(make_pair(distNbr, nbrLoc));
+
+						printDistH();
+
+						
+						
+					}
+				}
+
+			}
+
+
+
+		}
+
+
+	}
+
+};
+
+int main() {
+	int rows, cols, num;
+	cin >> rows >> cols;
+	Graph* g = new Graph(rows, cols);
+
+	for (int i = 0; i < rows * cols; i++) {
+		cin >> num;
+		g->add(num);
+	}
+	g->findShortestPaths();
+	
+	
+}
+
+/*
+10 10
+7 1 3 5 3 6 1 1 7 5
+2 3 6 1 1 6 6 6 1 2
+6 1 7 2 1 4 7 6 6 2
+6 6 7 1 3 3 5 1 3 4
+5 5 6 1 5 4 6 1 7 4
+3 5 5 2 7 5 3 4 3 6
+4 1 4 3 6 4 5 3 2 6
+4 4 1 7 4 3 3 1 4 2
+4 4 5 1 5 2 3 5 3 5
+3 6 3 5 2 2 6 4 2 1
+
+
+*/
+
