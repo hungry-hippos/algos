@@ -1,0 +1,154 @@
+/* Use BFS to find the shortest path from 0,0 to cell in grid marked with a 1.
+The follow vector is the grid.
+
+vector<vector<int>> mat = {
+		{0,-1,0,0,0},
+		{0,-1,0,-1,1},
+		{0,-1,0,0,0},
+		{0,0,-1,0,0},
+		{-1,0,0,0,-1}
+	};
+/*
+
+#include<iostream>
+#include<vector>
+#include<stack>
+#include<queue>
+using namespace std;
+
+struct Graph {
+	int V;
+	vector<vector<int>>* mat;
+	pair<int, int>** prevV;
+	bool** isVisited;
+public:
+	Graph(int V, vector<vector<int>>& mat) {
+		this->V = V;
+		this->mat = &mat;
+
+		prevV = new pair<int, int>* [V];
+		isVisited = new bool* [V];
+
+
+		for (int i = 0; i < V; i++) {
+			prevV[i] = new pair<int, int> [V];
+			isVisited[i] = new bool[V];
+			for (int j = 0; j < V; j++) {
+				prevV[i][j] = make_pair(INT_MAX, INT_MAX);
+				isVisited[i][j] = false;
+			}
+		}
+	}
+	void printMat() {
+		for (int i = 0; i < V; i++) {
+			for (int j = 0; j < V; j++) {
+				char wall = 219;
+				char path = 237;
+				if ((*mat)[i][j] == -1) {
+					cout << wall << " ";
+					continue;
+				}
+				if ((*mat)[i][j] == 1) {
+					cout << path << " ";
+					continue;
+				}
+				cout << (*mat)[i][j] << " ";
+			}
+			cout << endl;
+		}
+	}
+	bool getInGrid(int row, int col) {
+		if (0 <= row && row < V && 0 <= col && col < V) {
+			return true;
+		}
+		return false;
+	}
+
+
+	void BFS() {
+		queue<pair<int, int>> unexplored;
+		unexplored.push(make_pair(0, 0));
+		
+		while (!unexplored.empty()) {
+			queue<pair<int, int>> currentWave;
+			swap(currentWave, unexplored);
+			while (!currentWave.empty()) {
+				//get front vertex
+				pair<int, int> currentV = currentWave.front();
+				currentWave.pop();
+				int currentRow = currentV.first;
+				int currentCol = currentV.second;
+
+				//mark vertex as visited
+				isVisited[currentRow][currentCol] = true;
+
+				//look at all nbrs
+				int nbrRow[] = { 1,-1,0,0 };
+				int nbrCol[] = { 0,0,1,-1 };
+				for (int i = 0; i < 4; i++) {
+					int possRow = currentRow + nbrRow[i];
+					int possCol = currentCol + nbrCol[i];
+
+					bool inGrid = getInGrid(possRow, possCol);
+					
+					if (inGrid) {
+						if (!isVisited[possRow][possCol] && (*mat)[possRow][possCol]!=-1) {
+							unexplored.push(make_pair(possRow, possCol));
+							prevV[possRow][possCol] = make_pair(currentRow, currentCol);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	void printSP() {
+		//find target
+		int targetRow = 0;
+		int targetCol = 0;
+		for (int i = 0; i < V; i++) {
+			for (int j = 0; j < V; j++) {
+				if ((*mat)[i][j] == 1) {
+					targetRow = i;
+					targetCol = j;
+					break;
+				}
+			}
+		}
+
+		//backtrack, replacing 0 with 1 on every square in path. Stop when you reach mat[0][0], whose prevV is INTMAX,INTMAX
+		pair<int, int> targetsParent = prevV[targetRow][targetCol];
+		int parentRow = targetsParent.first;
+		int parentCol = targetsParent.second;
+
+		while (parentRow != INT_MAX) {
+			//turn parent's location into a 1
+			(*mat)[parentRow][parentCol] = 1;
+
+			//go to the parent's location, get the stored pair
+			pair<int, int> parentsParent = prevV[parentRow][parentCol];
+
+			//update parentRow/Col
+			parentRow = parentsParent.first;
+			parentCol = parentsParent.second;
+		}
+		(*mat)[0][0] = 1;
+
+		printMat();
+	}
+
+};
+
+int main() {
+	vector<vector<int>> mat = {
+		{0,-1,0,0,0},
+		{0,-1,0,-1,1},
+		{0,-1,0,0,0},
+		{0,0,-1,0,0},
+		{-1,0,0,0,-1}
+	};
+
+	Graph* g = new Graph(5, mat);
+	g->BFS();
+	g->printSP();
+}
